@@ -108,6 +108,19 @@ export default function App() {
     history.replaceState(null, '', `#${id}`)
   }, [])
 
+  // Ссылка вида /#useMemo должна открывать хук и тогда, когда страница уже загружена:
+  // из README, из закладки или кнопкой «назад».
+  useEffect(() => {
+    const openFromHash = () => {
+      const id = window.location.hash.slice(1)
+      if (id === openId || !demos.some((demo) => demo.id === id)) return
+      shouldScroll.current = true
+      setOpenId(id)
+    }
+    window.addEventListener('hashchange', openFromHash)
+    return () => window.removeEventListener('hashchange', openFromHash)
+  }, [openId])
+
   // Эффект выполняется после коммита, поэтому высота документа уже пересчитана
   // с учётом раскрытия и схлопывания карточек — можно скроллить сразу.
   useEffect(() => {
