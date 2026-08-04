@@ -252,6 +252,24 @@ export function afterCurrentTask(callback: () => void) {
   channel.port2.postMessage(null)
 }
 
+/**
+ * Ждёт, пока браузер отрисует кадр: rAF выполняется перед отрисовкой,
+ * а setTimeout из него — уже после неё. Процессор при этом свободен.
+ * Страховочный таймаут нужен для фоновой вкладки, где кадров не бывает.
+ */
+export function nextPaint(safetyMs = 120) {
+  return new Promise<void>((resolve) => {
+    let isDone = false
+    const finish = () => {
+      if (isDone) return
+      isDone = true
+      resolve()
+    }
+    requestAnimationFrame(() => setTimeout(finish, 0))
+    setTimeout(finish, safetyMs)
+  })
+}
+
 /** Искусственно нагружает поток — чтобы «тормоза» были видны глазом. */
 export function burnCpu(ms: number) {
   const until = performance.now() + ms
