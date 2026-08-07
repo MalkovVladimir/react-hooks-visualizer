@@ -33,10 +33,10 @@ function NaiveTicker() {
   useEffect(() => priceStore.subscribe(() => setPrice(priceStore.getSnapshot())), [])
   return <b>{price}</b>
 }`,
-    correct: 'correct from the very first frame',
+    correct: 'correct at once',
     money: (value: number) => `$${value}`,
-    waiting: 'waiting for the store’s first event',
-    late: 'data only arrived with the next tick',
+    waiting: 'no value yet',
+    late: 'arrived a tick late',
     remount: 'remount both',
     unsubscribe: 'unsubscribe (unmount)',
     subscribe: 'subscribe (mount)',
@@ -44,6 +44,10 @@ function NaiveTicker() {
     hint: (ms: number) =>
       `Press “remount” — the left panel shows a dash for up to ${ms} ms, while the right one picks up the current value during the render itself.`,
     naiveTitle: 'useEffect + useState (naive)',
+    naiveNote:
+      'The subscription is set up after the paint, so the first frame has no value at all and the data only shows up on the next tick of the store.',
+    correctNote:
+      'React reads the snapshot during the render itself, so the value is right in the very first frame.',
     correctTitle: 'useSyncExternalStore',
     noSubscribers:
       'no subscribers — the store stopped its own timer (that is what the cleanup returned from subscribe does)',
@@ -86,10 +90,10 @@ function NaiveTicker() {
   useEffect(() => priceStore.subscribe(() => setPrice(priceStore.getSnapshot())), [])
   return <b>{price} ₽</b>
 }`,
-    correct: 'верно с первого кадра',
+    correct: 'верно сразу',
     money: (value: number) => `${value} ₽`,
-    waiting: 'ждём первого события стора',
-    late: 'данные появились только со следующим тиком',
+    waiting: 'значения ещё нет',
+    late: 'пришло на тик позже',
     remount: 'перемонтировать оба',
     unsubscribe: 'отписаться (unmount)',
     subscribe: 'подписаться (mount)',
@@ -97,6 +101,10 @@ function NaiveTicker() {
     hint: (ms: number) =>
       `Нажмите «перемонтировать» — левая панель до ${ms} мс показывает прочерк, правая берёт актуальное значение сразу при рендере.`,
     naiveTitle: 'useEffect + useState (наивно)',
+    naiveNote:
+      'Подписка оформляется после отрисовки, поэтому в первом кадре значения нет вовсе, а данные появляются только со следующим тиком стора.',
+    correctNote:
+      'React читает снимок прямо во время рендера, поэтому значение верно уже в первом кадре.',
     correctTitle: 'useSyncExternalStore',
     noSubscribers:
       'подписчиков нет — стор остановил свой таймер (это делает функция очистки из subscribe)',
@@ -203,9 +211,15 @@ function Demo() {
         <Split>
           <Panel title={t.naiveTitle} tone="bad">
             <NaiveTicker key={mountKey} waiting={t.waiting} late={t.late} money={t.money} />
+            <div className="muted" style={{ marginTop: 10 }}>
+              {t.naiveNote}
+            </div>
           </Panel>
           <Panel title={t.correctTitle} tone="good">
             <CorrectTicker key={mountKey} label={t.correct} money={t.money} />
+            <div className="muted" style={{ marginTop: 10 }}>
+              {t.correctNote}
+            </div>
           </Panel>
         </Split>
       ) : (

@@ -42,8 +42,10 @@ const text = {
     remount: 'mount it again',
     slowMotion: 'slow motion',
     realTime: 'real time',
-    notMounted: 'tooltip is not mounted',
-    badFrames: (count: number) => `frames shown at the wrong position: ${count}`,
+    notMounted: 'not mounted',
+    badFrames: (count: number) => `wrong frames: ${count}`,
+    badFramesNote:
+      '“Wrong frames” counts the frames the browser actually painted while the tooltip was still at position 0 — measured with `requestAnimationFrame`.',
     slowHint: (ms: number) =>
       `Before measuring, the left panel waits on \`requestAnimationFrame\` for ${ms} ms — the CPU is idle, real frames just go by. That stretches out the very gap that normally lasts a single frame.`,
     realHint:
@@ -94,8 +96,10 @@ const text = {
     remount: 'смонтировать заново',
     slowMotion: 'замедленная съёмка',
     realTime: 'обычный темп',
-    notMounted: 'подсказка не смонтирована',
-    badFrames: (count: number) => `кадров с неправильной позицией: ${count}`,
+    notMounted: 'не смонтирована',
+    badFrames: (count: number) => `неверных кадров: ${count}`,
+    badFramesNote:
+      '«Неверные кадры» — сколько кадров браузер успел отрисовать, пока подсказка ещё стояла в позиции 0. Считается через `requestAnimationFrame`.',
     slowHint: (ms: number) =>
       `Перед замером левая панель ${ms} мс подряд ждёт \`requestAnimationFrame\` — процессор свободен, просто проходят настоящие кадры. Так растянут тот самый промежуток, который в обычном темпе длится один кадр.`,
     realHint:
@@ -340,6 +344,10 @@ function Demo() {
           </div>
         </Panel>
       </Split>
+
+      <div className="muted">
+        <Rich>{t.badFramesNote}</Rich>
+      </div>
 
       <div className="muted">{t.footer}</div>
     </Stage>

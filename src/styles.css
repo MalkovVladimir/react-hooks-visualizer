@@ -135,8 +135,10 @@ button {
 }
 
 @media (max-width: 1000px) {
+  /* minmax(0, …), а не 1fr: иначе колонка раздувается до min-content
+     своего содержимого и вся страница уезжает горизонтально. */
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .toc {
     position: static !important;
@@ -313,7 +315,7 @@ button {
 
 @media (max-width: 900px) {
   .split {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -485,7 +487,11 @@ pre.code {
   font-size: 11.5px;
   font-family: var(--mono);
   color: var(--txt-dim);
-  white-space: nowrap;
+  /* Панели бывают узкими (половина карточки, поделённая ещё раз), поэтому
+     чипу нельзя разрешать вылезать наружу: он переносится, а не обрезается. */
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .chip.accent {
