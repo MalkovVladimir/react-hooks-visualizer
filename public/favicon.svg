@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7c9cff" />
+      <stop offset="1" stop-color="#59e3c8" />
+    </linearGradient>
+  </defs>
+
+  <!-- фирменный градиент страницы: accent → accent-2 -->
+  <rect width="256" height="256" rx="58" fill="url(#bg)" />
+
+  <!-- сам «хук»: тот же тёмный цвет, что у текста на акцентных плашках -->
+  <path
+    d="M168 62 V156 A40 40 0 0 1 88 156 V132"
+    fill="none"
+    stroke="#08101f"
+    stroke-width="36"
+    stroke-linecap="round"
+  />
+</svg>
