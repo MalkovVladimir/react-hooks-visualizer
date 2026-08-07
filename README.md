@@ -10,6 +10,7 @@
 ![React](https://img.shields.io/badge/React-19.2-7c9cff?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-59e3c8?logo=vite&logoColor=white)
+![Языки](https://img.shields.io/badge/языки-EN%20%C2%B7%20RU-ffb454)
 ![Зависимостей](https://img.shields.io/badge/рантайм--зависимостей-0-52d98a)
 ![License](https://img.shields.io/badge/license-MIT-98a2b8)
 
@@ -30,6 +31,9 @@
 Одна страница со списком хуков. Клик по названию плавно скроллит к демо и раскрывает его, остальные
 сворачиваются; кнопка **«Далее»** делает то же самое для следующего. Открытый хук пишется в адрес
 (`#useMemo`) — ссылкой можно поделиться.
+
+Переключатель **EN / RU** в шапке меняет язык всей страницы: подписи, пояснения, ленты событий и
+комментарии в примерах кода. По умолчанию английский, выбор запоминается в `localStorage`.
 
 Формат демо зависит от природы хука:
 
@@ -105,6 +109,7 @@ npm run dev
 ```
 src/
 ├── App.tsx          список хуков, аккордеон, плавный скролл
+├── i18n.tsx         языковой контекст и тексты самой страницы
 ├── types.ts         контракт демо: код примера + компонент + нюансы
 ├── demos/           по одному файлу на хук
 └── ui/
@@ -117,17 +122,21 @@ src/
 
 ### Как добавить хук
 
-Создать файл в `src/demos/` с объектом `HookDemo` и включить его в `src/demos/index.ts`:
+Создать файл в `src/demos/` с объектом `HookDemo` и включить его в `src/demos/index.ts`. Тексты
+лежат рядом с демо, по одному словарю на язык; внутри компонента они берутся хуком `useText`:
 
 ```ts
-export const useSomethingDemo: HookDemo = {
-  id: 'useSomething',
-  pkg: 'react',
-  tagline: 'одна строка: зачем он нужен',
-  code,        // минимальный пример — то, что слева
-  Demo,        // живая визуализация — то, что справа
-  notes: [],   // нюансы, ради которых обычно и лезут в доку
+const text = {
+  en: { tagline: 'one line: what it is for', code, notes: [], /* подписи демо */ },
+  ru: { tagline: 'одна строка: зачем он нужен', code, notes: [], /* подписи демо */ },
 }
+
+function Demo() {
+  const t = useText(text)   // словарь текущего языка
+  // ...
+}
+
+export const useSomethingDemo: HookDemo = { id: 'useSomething', pkg: 'react', text, Demo }
 ```
 
 ## Лицензия

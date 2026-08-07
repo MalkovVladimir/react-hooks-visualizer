@@ -59,10 +59,52 @@ button {
   margin-bottom: 28px;
 }
 
+.masthead-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
 .masthead h1 {
   margin: 0 0 10px;
   font-size: 34px;
   letter-spacing: -0.02em;
+}
+
+.lang-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  flex-shrink: 0;
+}
+
+.lang-btn {
+  min-width: 42px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--txt-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lang-btn:hover {
+  color: var(--txt);
+  background: var(--panel-2);
+}
+
+.lang-btn.active {
+  background: linear-gradient(180deg, #4d6fe0, #3d59c4);
+  color: #fff;
 }
 
 .masthead h1 span {
@@ -793,6 +835,7 @@ pre.code {
 .tooltip-area {
   position: relative;
   height: 130px;
+  margin-bottom: 12px;
   border: 1px solid var(--line-soft);
   border-radius: 9px;
   background: #0c1018;

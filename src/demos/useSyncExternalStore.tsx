@@ -1,8 +1,64 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Btn, Chip, Panel, Row, Split, Stage } from '../ui/kit'
+import { useText } from '../i18n'
 import type { HookDemo } from '../types'
 
-const code = `// Стор живёт вне React и меняется сам по себе.
+const text = {
+  en: {
+    tagline: 'subscribe to state outside React — no lost or torn values',
+    code: `// The store lives outside React and changes on its own.
+const priceStore = {
+  subscribe(onChange) {
+    const timerId = setInterval(() => { price = next(); onChange() }, 1000)
+    return () => clearInterval(timerId)      // unsubscribe
+  },
+  getSnapshot: () => price,                  // must return the same value if nothing changed
+  getServerSnapshot: () => 0,                // for SSR
+}
+
+// Correct: React subscribes at the right moment and compares snapshots itself.
+function Ticker() {
+  const price = useSyncExternalStore(
+    priceStore.subscribe,
+    priceStore.getSnapshot,
+    priceStore.getServerSnapshot,
+  )
+  return <b>{price}</b>
+}
+
+// Naive: the subscription is set up AFTER the paint, so the first frame
+// shows the default value and any change between render and effect is lost.
+function NaiveTicker() {
+  const [price, setPrice] = useState(0)
+  useEffect(() => priceStore.subscribe(() => setPrice(priceStore.getSnapshot())), [])
+  return <b>{price}</b>
+}`,
+    correct: 'correct from the very first frame',
+    money: (value: number) => `$${value}`,
+    waiting: 'waiting for the store’s first event',
+    late: 'data only arrived with the next tick',
+    remount: 'remount both',
+    unsubscribe: 'unsubscribe (unmount)',
+    subscribe: 'subscribe (mount)',
+    ticks: (ms: number) => `the store ticks every ${ms} ms`,
+    hint: (ms: number) =>
+      `Press “remount” — the left panel shows a dash for up to ${ms} ms, while the right one picks up the current value during the render itself.`,
+    naiveTitle: 'useEffect + useState (naive)',
+    correctTitle: 'useSyncExternalStore',
+    noSubscribers:
+      'no subscribers — the store stopped its own timer (that is what the cleanup returned from subscribe does)',
+    notes: [
+      'Three arguments: `subscribe(onChange)` returns an unsubscribe function, `getSnapshot()` returns the current value, and the third is the snapshot used on the server during SSR.',
+      '`getSnapshot` must return the very same value (`Object.is`) while the store has not changed. Build a new object every call and you get an infinite render loop.',
+      'React reads the snapshot during rendering, so the value is correct from the first frame — and cannot drift apart between components during concurrent rendering (that is what tearing means).',
+      '`subscribe` must be a stable function. Declare it outside the component or wrap it in `useCallback`, otherwise React resubscribes on every render.',
+      'Typical sources: your own state store, `window.matchMedia`, `navigator.onLine`, `localStorage`, a WebSocket. Browser APIs have `useSyncExternalStore` — do not hand-roll a `useEffect`.',
+      'Updates from an external store are always synchronous: you cannot mark them as non-urgent with `startTransition`.',
+    ],
+  },
+  ru: {
+    tagline: 'подписка на состояние вне React — без потерянных и рассинхронизированных значений',
+    code: `// Стор живёт вне React и меняется сам по себе.
 const priceStore = {
   subscribe(onChange) {
     const timerId = setInterval(() => { price = next(); onChange() }, 1000)
@@ -29,7 +85,31 @@ function NaiveTicker() {
   const [price, setPrice] = useState(0)
   useEffect(() => priceStore.subscribe(() => setPrice(priceStore.getSnapshot())), [])
   return <b>{price} ₽</b>
-}`
+}`,
+    correct: 'верно с первого кадра',
+    money: (value: number) => `${value} ₽`,
+    waiting: 'ждём первого события стора',
+    late: 'данные появились только со следующим тиком',
+    remount: 'перемонтировать оба',
+    unsubscribe: 'отписаться (unmount)',
+    subscribe: 'подписаться (mount)',
+    ticks: (ms: number) => `стор тикает каждые ${ms} мс`,
+    hint: (ms: number) =>
+      `Нажмите «перемонтировать» — левая панель до ${ms} мс показывает прочерк, правая берёт актуальное значение сразу при рендере.`,
+    naiveTitle: 'useEffect + useState (наивно)',
+    correctTitle: 'useSyncExternalStore',
+    noSubscribers:
+      'подписчиков нет — стор остановил свой таймер (это делает функция очистки из subscribe)',
+    notes: [
+      'Три аргумента: `subscribe(onChange)` возвращает функцию отписки, `getSnapshot()` отдаёт текущее значение, третий — снимок для сервера при SSR.',
+      '`getSnapshot` обязан возвращать то же самое значение (`Object.is`), пока стор не изменился. Если каждый раз собирать новый объект — получите бесконечный цикл рендеров.',
+      'React читает снимок во время рендера, поэтому значение верно с первого кадра — и не может «разъехаться» между компонентами при конкурентном рендеринге (это и есть tearing).',
+      '`subscribe` должна быть стабильной функцией. Объявите её вне компонента или заверните в `useCallback`, иначе React будет переподписываться на каждом рендере.',
+      'Типичные источники: собственный стор состояния, `window.matchMedia`, `navigator.onLine`, `localStorage`, WebSocket. Для браузерных API есть `useSyncExternalStore` — не городите `useEffect`.',
+      'Обновления из внешнего стора всегда синхронные: пометить их как не срочные через `startTransition` нельзя.',
+    ],
+  },
+}
 
 /* ------------------------- внешний стор: обычный JS, про React ничего не знает */
 
@@ -63,7 +143,9 @@ const priceStore = {
 
 /* ------------------------------------------------------------------ подписчики */
 
-function CorrectTicker() {
+type Labels = (typeof text)['en']
+
+function CorrectTicker({ label, money }: { label: string; money: Labels['money'] }) {
   const value = useSyncExternalStore(
     priceStore.subscribe,
     priceStore.getSnapshot,
@@ -71,30 +153,35 @@ function CorrectTicker() {
   )
   return (
     <>
-      <div className="big-num">{value} ₽</div>
-      <Chip tone="good">верно с первого кадра</Chip>
+      <div className="big-num">{money(value)}</div>
+      <Chip tone="good">{label}</Chip>
     </>
   )
 }
 
-function NaiveTicker() {
+function NaiveTicker({
+  waiting,
+  late,
+  money,
+}: {
+  waiting: string
+  late: string
+  money: Labels['money']
+}) {
   const [value, setValue] = useState<number | null>(null)
 
   useEffect(() => priceStore.subscribe(() => setValue(priceStore.getSnapshot())), [])
 
   return (
     <>
-      <div className="big-num">{value === null ? '—' : `${value} ₽`}</div>
-      {value === null ? (
-        <Chip tone="bad">ждём первого события стора</Chip>
-      ) : (
-        <Chip tone="warn">данные появились только со следующим тиком</Chip>
-      )}
+      <div className="big-num">{value === null ? '—' : money(value)}</div>
+      {value === null ? <Chip tone="bad">{waiting}</Chip> : <Chip tone="warn">{late}</Chip>}
     </>
   )
 }
 
 function Demo() {
+  const t = useText(text)
   const [mountKey, setMountKey] = useState(1)
   const [isMounted, setIsMounted] = useState(true)
 
@@ -102,32 +189,27 @@ function Demo() {
     <Stage>
       <Row>
         <Btn variant="primary" onClick={() => setMountKey((key) => key + 1)}>
-          перемонтировать оба
+          {t.remount}
         </Btn>
         <Btn onClick={() => setIsMounted((value) => !value)}>
-          {isMounted ? 'отписаться (unmount)' : 'подписаться (mount)'}
+          {isMounted ? t.unsubscribe : t.subscribe}
         </Btn>
-        <Chip>стор тикает каждые {TICK_MS} мс</Chip>
+        <Chip>{t.ticks(TICK_MS)}</Chip>
       </Row>
 
-      <div className="muted">
-        Нажмите «перемонтировать» — левая панель до {TICK_MS} мс показывает прочерк, правая берёт
-        актуальное значение сразу при рендере.
-      </div>
+      <div className="muted">{t.hint(TICK_MS)}</div>
 
       {isMounted ? (
         <Split>
-          <Panel title="useEffect + useState (наивно)" tone="bad">
-            <NaiveTicker key={mountKey} />
+          <Panel title={t.naiveTitle} tone="bad">
+            <NaiveTicker key={mountKey} waiting={t.waiting} late={t.late} money={t.money} />
           </Panel>
-          <Panel title="useSyncExternalStore" tone="good">
-            <CorrectTicker key={mountKey} />
+          <Panel title={t.correctTitle} tone="good">
+            <CorrectTicker key={mountKey} label={t.correct} money={t.money} />
           </Panel>
         </Split>
       ) : (
-        <div className="box muted">
-          подписчиков нет — стор остановил свой таймер (это делает функция очистки из subscribe)
-        </div>
+        <div className="box muted">{t.noSubscribers}</div>
       )}
     </Stage>
   )
@@ -136,16 +218,7 @@ function Demo() {
 export const useSyncExternalStoreDemo: HookDemo = {
   id: 'useSyncExternalStore',
   pkg: 'react',
-  tagline: 'подписка на состояние вне React — без потерянных и рассинхронизированных значений',
-  code,
-  Demo,
-  notes: [
-    'Три аргумента: `subscribe(onChange)` возвращает функцию отписки, `getSnapshot()` отдаёт текущее значение, третий — снимок для сервера при SSR.',
-    '`getSnapshot` обязан возвращать то же самое значение (`Object.is`), пока стор не изменился. Если каждый раз собирать новый объект — получите бесконечный цикл рендеров.',
-    'React читает снимок во время рендера, поэтому значение верно с первого кадра — и не может «разъехаться» между компонентами при конкурентном рендеринге (это и есть tearing).',
-    '`subscribe` должна быть стабильной функцией. Объявите её вне компонента или заверните в `useCallback`, иначе React будет переподписываться на каждом рендере.',
-    'Типичные источники: собственный стор состояния, `window.matchMedia`, `navigator.onLine`, `localStorage`, WebSocket. Для браузерных API есть `useSyncExternalStore` — не городите `useEffect`.',
-    'Обновления из внешнего стора всегда синхронные: пометить их как не срочные через `startTransition` нельзя.',
-  ],
   since: '18',
+  text,
+  Demo,
 }

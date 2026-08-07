@@ -39,7 +39,7 @@ export function Code({ children, title }: { children: string; title?: string }) 
     <div className="panel">
       <div className="panel-head">
         <span className="dot" />
-        {title ?? 'код'}
+        {title ?? 'code'}
       </div>
       <pre className="code" dangerouslySetInnerHTML={{ __html: highlight(children.trim()) }} />
     </div>

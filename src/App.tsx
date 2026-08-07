@@ -1,20 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { demos } from './demos'
 import { Code } from './ui/Code'
+import { Rich } from './ui/kit'
+import { LANGS, LangProvider, uiText, useLangState, type Lang } from './i18n'
 import type { HookDemo } from './types'
-
-/** Превращает `code` в бэктиках в <code>. */
-function renderNote(text: string): ReactNode[] {
-  return text.split(/`([^`]+)`/g).map((part, index) =>
-    index % 2 === 1 ? (
-      <code key={index} className="inline-code">
-        {part}
-      </code>
-    ) : (
-      <span key={index}>{part}</span>
-    ),
-  )
-}
 
 function Chevron() {
   return (
@@ -27,6 +16,7 @@ function Chevron() {
 function HookCard({
   demo,
   index,
+  lang,
   isOpen,
   onToggle,
   onNext,
@@ -35,6 +25,7 @@ function HookCard({
 }: {
   demo: HookDemo
   index: number
+  lang: Lang
   isOpen: boolean
   onToggle: () => void
   onNext: () => void
@@ -42,6 +33,8 @@ function HookCard({
   cardRef: (node: HTMLElement | null) => void
 }) {
   const { Demo } = demo
+  const ui = uiText[lang]
+  const text = demo.text[lang]
 
   return (
     <section className={`card${isOpen ? ' open' : ''}`} id={demo.id} ref={cardRef}>
@@ -49,36 +42,39 @@ function HookCard({
         <Chevron />
         <span className="card-index">{String(index + 1).padStart(2, '0')}</span>
         <span className="card-title">{demo.id}</span>
-        <span className="card-tagline">{demo.tagline}</span>
+        <span className="card-tagline">{text.tagline}</span>
         <span className="chip">{demo.pkg}</span>
       </button>
 
       {isOpen && (
         <div className="card-body">
           <div className="split">
-            <Code title={`${demo.id} — пример`}>{demo.code}</Code>
-            {/* ключ по id — при переключении хука демо монтируется заново */}
-            <Demo key={demo.id} />
+            <Code title={`${demo.id} — ${ui.codeTitle}`}>{text.code}</Code>
+            {/* ключ по языку тоже: смена языка монтирует демо заново, чтобы в лентах
+                не оставалось строк на прошлом языке */}
+            <Demo key={`${demo.id}-${lang}`} />
           </div>
 
           <div className="notes">
             <ul>
-              {demo.notes.map((note, noteIndex) => (
-                <li key={noteIndex}>{renderNote(note)}</li>
+              {text.notes.map((note, noteIndex) => (
+                <li key={noteIndex}>
+                  <Rich>{note}</Rich>
+                </li>
               ))}
             </ul>
           </div>
 
           <div className="card-foot">
             <span className="muted">
-              {demo.since ? `доступен с React ${demo.since}` : 'доступен во всех версиях с хуками'}
+              {demo.since ? `${ui.since} ${demo.since}` : ui.sinceAny}
             </span>
             {!isLast ? (
               <button className="btn primary" onClick={onNext}>
-                Далее: {demos[index + 1].id} →
+                {ui.next}: {demos[index + 1].id} →
               </button>
             ) : (
-              <span className="muted">Это последний хук в списке 🎉</span>
+              <span className="muted">{ui.last}</span>
             )}
           </div>
         </div>
@@ -88,6 +84,9 @@ function HookCard({
 }
 
 export default function App() {
+  const [lang, setLang] = useLangState()
+  const ui = uiText[lang]
+
   const initialId = demos.some((demo) => demo.id === window.location.hash.slice(1))
     ? window.location.hash.slice(1)
     : demos[0].id
@@ -122,15 +121,16 @@ export default function App() {
   }, [openId])
 
   // Эффект выполняется после коммита, поэтому высота документа уже пересчитана
-  // с учётом раскрытия и схлопывания карточек — можно скроллить сразу.
+  // с учётом раскрытия и схлопывания карточек.
   useEffect(() => {
     if (!shouldScroll.current) return
     shouldScroll.current = false
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    cards.current.get(openId)?.scrollIntoView({
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
-      block: 'start',
-    })
+    const node = cards.current.get(openId)
+    if (!node) return
+    const frame = requestAnimationFrame(() =>
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    )
+    return () => cancelAnimationFrame(frame)
   }, [openId])
 
   const openIndex = demos.findIndex((demo) => demo.id === openId)
@@ -149,54 +149,76 @@ export default function App() {
   )
 
   return (
-    <div className="shell">
-      <header className="masthead">
-        <h1>
-          Все хуки <span>React</span> — наглядно
-        </h1>
-        <p>
-          Слева — минимальный пример кода, справа — живой результат. Где хук про кеш или про
-          отзывчивость, стоят две панели: «без хука» и «с хуком». Где про жизненный цикл — события
-          показаны анимированной лентой.
-        </p>
-        <div className="meta">
-          <span className="chip accent">React 19.2</span>
-          <span className="chip">{demos.length} хуков</span>
-          <span className="chip">клик по названию — плавный скролл к демо</span>
-        </div>
-      </header>
-
-      <div className="layout">
-        <nav className="toc">
-          <div className="toc-group">react</div>
-          {reactHooks.map(tocItem)}
-          <div className="toc-group">react-dom</div>
-          {domHooks.map(tocItem)}
-        </nav>
-
-        <main>
-          {demos.map((demo, index) => (
-            <HookCard
-              key={demo.id}
-              demo={demo}
-              index={index}
-              isOpen={demo.id === openId}
-              isLast={index === demos.length - 1}
-              onToggle={() => toggle(demo.id)}
-              onNext={() => open(demos[index + 1].id)}
-              cardRef={(node) => {
-                if (node) cards.current.set(demo.id, node)
-                else cards.current.delete(demo.id)
-              }}
-            />
-          ))}
-
-          <div className="footer">
-            {openIndex >= 0 ? `Открыт ${openIndex + 1} из ${demos.length}. ` : ''}
-            Каждое демо — рабочий компонент: код в панели слева и есть то, что выполняется справа.
+    <LangProvider lang={lang}>
+      <div className="shell">
+        <header className="masthead">
+          <div className="masthead-top">
+            <h1>
+              {ui.titleBefore}
+              <span>{ui.titleHighlight}</span>
+              {ui.titleAfter}
+            </h1>
+            <div className="lang-switch" role="group" aria-label={ui.langLabel}>
+              {LANGS.map((option) => (
+                <button
+                  key={option.id}
+                  className={`lang-btn${option.id === lang ? ' active' : ''}`}
+                  onClick={() => setLang(option.id)}
+                  aria-pressed={option.id === lang}
+                  title={option.title}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </main>
+
+          <p>{ui.lead}</p>
+
+          <div className="meta">
+            <span className="chip accent">React 19.2</span>
+            <span className="chip">
+              {demos.length} {ui.chipHooks}
+            </span>
+            <span className="chip">{ui.chipHint}</span>
+          </div>
+        </header>
+
+        <div className="layout">
+          <nav className="toc">
+            <div className="toc-group">react</div>
+            {reactHooks.map(tocItem)}
+            <div className="toc-group">react-dom</div>
+            {domHooks.map(tocItem)}
+          </nav>
+
+          <main>
+            {demos.map((demo, index) => (
+              <HookCard
+                key={demo.id}
+                demo={demo}
+                index={index}
+                lang={lang}
+                isOpen={demo.id === openId}
+                isLast={index === demos.length - 1}
+                onToggle={() => toggle(demo.id)}
+                onNext={() => open(demos[index + 1].id)}
+                cardRef={(node) => {
+                  if (node) cards.current.set(demo.id, node)
+                  else cards.current.delete(demo.id)
+                }}
+              />
+            ))}
+
+            <div className="footer">
+              {openIndex >= 0
+                ? `${ui.footerOpen} ${openIndex + 1} ${ui.footerOf} ${demos.length}. `
+                : ''}
+              {ui.footerTail}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </LangProvider>
   )
 }

@@ -82,6 +82,23 @@ export function Row({ children }: { children: ReactNode }) {
   return <div className="row">{children}</div>
 }
 
+/** Текст, в котором `код в бэктиках` превращается в <code>. */
+export function Rich({ children }: { children: string }) {
+  return (
+    <>
+      {children.split(/`([^`]+)`/g).map((part, index) =>
+        index % 2 === 1 ? (
+          <code key={index} className="inline-code">
+            {part}
+          </code>
+        ) : (
+          <span key={index}>{part}</span>
+        ),
+      )}
+    </>
+  )
+}
+
 export function Label({ children }: { children: ReactNode }) {
   return <div className="label">{children}</div>
 }
@@ -161,7 +178,7 @@ export function useLogStore(limit = 60) {
 
 export function LogPanel({
   store,
-  empty = 'событий пока нет',
+  empty = 'no events yet',
 }: {
   store: LogStore
   empty?: string
